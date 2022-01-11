@@ -14,13 +14,15 @@ import {
   ActionContainer,
   Code,
 } from '../../components/Common';
-import { getAccessMatrix } from '../../services/AccessServices';
+import {
+  getAccessMatrix,
+  setAccessMatrix,
+} from '../../services/AccessServices';
 import {
   arrayToDictionary,
   pickFromArrayByName,
   parseAccessMatrix,
 } from '../../helpers/arrayHandler';
-import { downloadCustomJSON } from '../../helpers/fileHandler';
 
 const AccessMatrix = () => {
   const [loaded, setLoaded] = React.useState(false);
@@ -44,16 +46,29 @@ const AccessMatrix = () => {
     form
       .validateFields()
       .then(() => {
-        const value = form.getFieldsValue();
         setData((oldData) => {
-          oldData.push(value);
+          const value = form.getFieldsValue();
+          const { name } = value;
+          const oldValue = pickFromArrayByName(name)(data);
+          if (!oldValue) {
+            oldData.push(value);
+          } else {
+            oldData = R.pipe(
+              arrayToDictionary,
+              R.assoc(name, value),
+              R.values
+            )(oldData);
+          }
+
+          setAccessMatrix(parseAccessMatrix(oldData)).finally(() => {
+            setFormOpen(false);
+            setIdentifier(null);
+            form.resetFields();
+          });
           return oldData;
         });
-        setFormOpen(false);
-        setIdentifier(null);
-        form.resetFields();
       })
-      .catch(console.log);
+      .catch((a) => console.log(a));
   };
 
   const handleFormCancel = () => {
@@ -81,11 +96,7 @@ const AccessMatrix = () => {
   const onRemove = (name) => {
     R.pipe(arrayToDictionary, R.omit([name]), R.values, setData)(data);
   };
-
-  const onUpload = () => {
-    downloadCustomJSON(data, 'access.json');
-  };
-
+  console.log(data);
   return (
     <Content>
       <Typography.Title level={3}>Access Matrix</Typography.Title>
@@ -93,9 +104,6 @@ const AccessMatrix = () => {
         <Typography.Title level={4}>Identifier</Typography.Title>
         <Typography.Title level={4}>Consumable</Typography.Title>
         <ActionHeaderContainer>
-          <CenteredButton type="primary" onClick={onUpload}>
-            Upload
-          </CenteredButton>
           <CenteredButton type="primary" onClick={() => setViewOpen(true)}>
             <FaEye />
           </CenteredButton>

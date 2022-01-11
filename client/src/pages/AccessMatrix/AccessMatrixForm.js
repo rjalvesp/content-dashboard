@@ -22,7 +22,7 @@ const AccessMatrixForm = ({ form, initialValues }) => {
       <Form.Item
         label="Consumable"
         name="consumable"
-        rules={[{ required: true, message: 'Field required' }]}
+        // rules={[{ required: true, message: 'Field required' }]}
       >
         <Input />
       </Form.Item>

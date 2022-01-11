@@ -14,7 +14,10 @@ import {
   ActionContainer,
   Code,
 } from '../../components/Common';
-import { getRestrictedAccess } from '../../services/AccessServices';
+import {
+  getRestrictedAccess,
+  setRestrictedAccess,
+} from '../../services/AccessServices';
 import {
   arrayToDictionary,
   pickFromArrayByName,
@@ -43,14 +46,27 @@ const RestrictedAccess = () => {
     form
       .validateFields()
       .then(() => {
-        const value = form.getFieldsValue();
         setData((oldData) => {
-          oldData.push(value);
+          const value = form.getFieldsValue();
+          const { name } = value;
+          const oldValue = pickFromArrayByName(name)(data);
+          if (!oldValue) {
+            oldData.push(value);
+          } else {
+            oldData = R.pipe(
+              arrayToDictionary,
+              R.assoc(name, value),
+              R.values
+            )(oldData);
+          }
+
+          setRestrictedAccess(oldData).finally(() => {
+            setFormOpen(false);
+            setIdentifier(null);
+            form.resetFields();
+          });
           return oldData;
         });
-        setFormOpen(false);
-        setIdentifier(null);
-        form.resetFields();
       })
       .catch(console.log);
   };
